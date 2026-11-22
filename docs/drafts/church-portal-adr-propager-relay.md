@@ -45,7 +45,15 @@ Hosting it in the portal rather than separately reuses the portal's public URL, 
 ```
 
 - Pinned to a release tag, like every portal dependency.
-- `@ministryplus/propager-relay` is added to `allowBuilds` in `pnpm-workspace.yaml`, because its `prepare` script builds `dist/` on install. (If the relay falls back to committing `dist/` on release tags, no `allowBuilds` entry is needed.)
+- The relay's `prepare` script builds `dist/` on install, so `pnpm-workspace.yaml` allows it. pnpm only accepts an entry pinned to the exact source and commit for a git-hosted package; a name-only entry fails the install with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`:
+
+  ```yaml
+  allowBuilds:
+    '@ministryplus/propager-relay@<resolved git url>#<commit sha>': true
+  ```
+
+- **Upgrading the relay edits two lines:** the tag in `package.json` and the commit in this entry. pnpm prints the entry it wants when the install fails, so copy it from the error. The entry is a deliberate per-commit trust step, consistent with the portal's supply-chain rules.
+- If the relay ever switches to committing `dist/` on release tags, the `allowBuilds` entry goes away and an upgrade is one line.
 - When the relay moves to npm, the spec changes to a version (`"0.3.0"`) and imports don't change. If `minimumReleaseAge` would delay a release of this first-party package, add it to `minimumReleaseAgeExclude`.
 
 ### 3. Configuration: runtime config first, Directus later
@@ -79,7 +87,7 @@ The relay core reads configuration through its config-source interface.
 
 - **Portal deploys interrupt paging** at every site until ProPager reconnects.
 - **The portal now holds the Slack bot token** and site keys, raising the stakes of a server-side leak.
-- **A new trusted install-time build** in the portal's dependency tree, until the relay moves to npm.
+- **A new trusted install-time build** in the portal's dependency tree, and a two-line upgrade (tag plus commit-pinned `allowBuilds` entry), until the relay moves to npm.
 - **The portal's uptime becomes paging's uptime.** If that is unacceptable, move to a standalone relay; ProPager sites only change their relay URL.
 
 ## Related

@@ -53,7 +53,16 @@ One-site churches don't need the relay; ProPager's Direct mode keeps working wit
 ```
 
 - **The repo is a real package from the first tag:** `name`, `exports` (`.`, `./h3`, `./standalone`), `types`, `files`, semver tags `vX.Y.Z`.
-- **`prepare` builds `dist/` on install,** and consumers trust it through their build allowlist (church-portal: `allowBuilds`). A short spike confirms first that pnpm runs `prepare` for a git dependency under `allowBuilds`. **Fallback:** a release script builds `dist/` and commits it on the tagged release commit only; `dist/` is gitignored otherwise.
+- **`prepare` builds `dist/` on install,** and consumers trust it through their build allowlist. `dist/` is never committed.
+- **The allowlist entry is pinned to a commit.** A spike on 2026-11-22 (pnpm 10.34.9, church-portal's pinned version; pnpm 12 behaves the same) showed that pnpm refuses to install a git-hosted package with build scripts unless `allowBuilds` names the exact source and commit. A name-only entry fails with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`:
+
+  ```yaml
+  allowBuilds:
+    '@ministryplus/propager-relay@<resolved git url>#<commit sha>': true
+  ```
+
+  So a consumer upgrades in two places: the tag in `package.json` and this entry. pnpm prints the exact entry it wants when an install fails, so it can be copied from the error. We keep `prepare` anyway: the entry is an explicit trust step per commit, it never installs the package unbuilt, and the relay's build tools stay out of the consumer's `node_modules`. If upgrades become frequent enough to hurt, the fallback is a release script that commits `dist/` on tagged release commits only; consumers then need no allowlist entry.
+- **Pin pnpm in this repo** with `packageManager` in `package.json`, so builds don't depend on whichever pnpm a contributor has installed globally.
 - **npm later:** `prepack` runs the same `build` script, the tarball carries `dist/` and type declarations, and consumers change `github:…#vX.Y.Z` to `X.Y.Z`. Reserve the `@ministryplus` npm scope before the first tag; if it's taken, choose the fallback scope then, so no import ever changes.
 
 ### 5. This repo owns the wire protocol
@@ -98,7 +107,7 @@ These follow from the relay being the one component that sees every event and ev
 ### Negative
 
 - **A second repo and release process** alongside ProPager, plus a fixture sync in ProPager whenever the protocol changes.
-- **Hosts depend on a trusted install-time build** until the package moves to npm, and that behavior is unverified until the spike runs.
+- **Hosts depend on a trusted install-time build** until the package moves to npm, and every upgrade edits a commit-pinned `allowBuilds` entry as well as the tag.
 - **A hosted relay is a single point of failure** for every site using it; restarts drop all site connections until clients reconnect.
 - **Echo filtering and per-thread ordering are implemented twice:** here for Relay mode, and in ProPager's `SlackClient` for Direct mode.
 - **Multi-workspace hosting is out of scope.** Each church runs its own relay; serving many churches from one relay (OAuth installs, app distribution) is a later decision.
