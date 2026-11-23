@@ -1,0 +1,9 @@
+{
+  "type": "hello",
+  "protocol": 1,
+  "role": "site",
+  "client": {
+    "name": "ProPager",
+    "version": "0.6.0"
+  }
+}

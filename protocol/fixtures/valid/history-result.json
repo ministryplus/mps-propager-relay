@@ -1,0 +1,28 @@
+{
+  "type": "history_result",
+  "id": "h1",
+  "channel": "C0123ABC",
+  "messages": [
+    {
+      "eventId": "Ev07ABCDEF12",
+      "channel": "C0123ABC",
+      "ts": "1732291200.000100",
+      "text": "1234",
+      "kind": "channel",
+      "user": "U0456DEF",
+      "fromSelf": false,
+      "origin": "slack"
+    },
+    {
+      "eventId": "Ev07ABCDEF13",
+      "channel": "C0123ABC",
+      "ts": "1732291260.000200",
+      "text": "on screen",
+      "kind": "thread",
+      "user": "U0456DEF",
+      "fromSelf": false,
+      "origin": "slack",
+      "threadTs": "1732291200.000100"
+    }
+  ]
+}

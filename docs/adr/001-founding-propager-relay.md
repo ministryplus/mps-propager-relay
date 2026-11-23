@@ -117,3 +117,12 @@ These follow from the relay being the one component that sees every event and ev
 - [mps-propager ADR 001](https://github.com/ministryplus/mps-propager/blob/master/docs/adr/001-slack-relay-architecture.md): the architecture decision this repo implements
 - [mps-propager Spec 003](https://github.com/ministryplus/mps-propager/blob/master/docs/specs/003-threaded-slack-feedback.md): threaded feedback, the own-message filter (Decision 2), and per-thread reply order (Decision 9) that the relay takes over in Relay mode
 - [Draft church-portal ADR](../drafts/church-portal-adr-propager-relay.md)
+
+## Addendum
+
+**Date:** 2026-11-22
+
+[Spec 001: Relay v1](../specs/001-relay-v1.md) refines two rows of Decision 6's table. The table above is left as written; this addendum is the current behavior.
+
+- **Route its own posts back as pages** (Spec 001 Decision 8). The relay doesn't wait for the echo of its own post: Slack's echo event can arrive before the `chat.postMessage` response that tells the relay which `ts` it was. Instead, when a viewer's `post` succeeds, the relay builds the page from the API response (`origin: "relay"`, `eventId: "relay:<ts>"`) and routes it to the owning site immediately, like a Slack message. When the echo arrives it is the bot's own message, so the echo filter drops it for sites; viewers receive it with `fromSelf: true`. The site pages once, with no race.
+- **Viewer subscriptions** (Spec 001 Decisions 7 and 11). Viewers are not read-only, and their posts do page. A viewer configured with `canPost` may post to its channels through the relay (a `post` frame, or `view.post()` for an in-process viewer), and a top-level post pages the owning site as described above. A viewer without `canPost` is read-only.

@@ -1,0 +1,56 @@
+{
+  "name": "@ministryplus/propager-relay",
+  "version": "0.1.0",
+  "description": "Routes one Slack app's events to many ProPager sites",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "default": "./dist/core/index.js"
+    },
+    "./h3": {
+      "types": "./dist/h3/index.d.ts",
+      "default": "./dist/h3/index.js"
+    },
+    "./standalone": {
+      "types": "./dist/standalone/index.d.ts",
+      "default": "./dist/standalone/index.js"
+    }
+  },
+  "bin": {
+    "propager-relay": "./dist/standalone/cli.js"
+  },
+  "files": [
+    "dist",
+    "protocol"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev:site": "node scripts/dev-site.ts",
+    "prepare": "pnpm run build",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "crossws": "^0.3.5",
+    "h3": "^1.15.0"
+  },
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "ws": "8.23.0"
+  },
+  "devDependencies": {
+    "@slack/types": "3.3.0",
+    "@types/node": "24.19.2",
+    "@types/ws": "8.18.2",
+    "ajv": "8.20.0",
+    "crossws": "0.3.5",
+    "h3": "1.15.11",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}
