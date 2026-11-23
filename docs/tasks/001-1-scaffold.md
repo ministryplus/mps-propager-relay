@@ -1,7 +1,7 @@
 # Task 001-1: Scaffold (package, toolchain, logger, empty entry points)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 1 (solo — every later task needs the package, the toolchain, and `Logger`)
 **Depends on:** —
 **Blocks:** [001-2](001-2-protocol.md), [001-3](001-3-config-keys.md), [001-4](001-4-slack-api.md), [001-8](001-8-events-api.md)
@@ -93,29 +93,29 @@ none of the files contains real behavior beyond the logger.
 
 ## Acceptance Criteria
 
-- [ ] `package.json` matches Decision 1: name, `0.1.0`, `"type": "module"`,
+- [x] `package.json` matches Decision 1: name, `0.1.0`, `"type": "module"`,
       the three `exports` (types + default), `bin`, `files: ["dist", "protocol"]`,
       `packageManager: "pnpm@12.9.1"`, `engines.node: ">=24"`.
-- [ ] Scripts `build`, `prepare` (→ `pnpm run build`), `test` (→ `vitest run`),
+- [x] Scripts `build`, `prepare` (→ `pnpm run build`), `test` (→ `vitest run`),
       and `typecheck` exist and work.
-- [ ] `ws` is the only runtime dependency; `h3 ^1.15.0` and `crossws ^0.3.5`
+- [x] `ws` is the only runtime dependency; `h3 ^1.15.0` and `crossws ^0.3.5`
       are peer dependencies; every dev dependency listed in Decision 1
       (`typescript`, `vitest`, `@types/node`, `@types/ws`, `@slack/types`,
       `ajv`, `h3`, `crossws`) is installed. Every `dependencies` and
       `devDependencies` version is exact (no `^`/`~`).
-- [ ] The installed `h3` is 1.x and `crossws` is 0.3.x.
-- [ ] `pnpm-workspace.yaml` sets `minimumReleaseAge: 10080`; `pnpm-lock.yaml`
+- [x] The installed `h3` is 1.x and `crossws` is 0.3.x.
+- [x] `pnpm-workspace.yaml` sets `minimumReleaseAge: 10080`; `pnpm-lock.yaml`
       is committed and has `lockfileVersion: '9.0'`.
-- [ ] `tsconfig.json` is `strict`, NodeNext, `verbatimModuleSyntax`, and covers
+- [x] `tsconfig.json` is `strict`, NodeNext, `verbatimModuleSyntax`, and covers
       `src`, `test`, `scripts`; `tsconfig.build.json` emits only `src` to
       `dist/` with `.d.ts` files.
-- [ ] `consoleLogger` implements `Logger` and prefixes every line with `[relay]`.
-- [ ] `pnpm build` produces `dist/core/index.{js,d.ts}`,
+- [x] `consoleLogger` implements `Logger` and prefixes every line with `[relay]`.
+- [x] `pnpm build` produces `dist/core/index.{js,d.ts}`,
       `dist/h3/index.{js,d.ts}`, `dist/standalone/index.{js,d.ts}`, and
       `dist/standalone/cli.js` starting with `#!/usr/bin/env node`.
-- [ ] `node dist/standalone/cli.js` exits 0 with no output.
-- [ ] `pnpm install`, `pnpm build`, `pnpm test`, and `pnpm typecheck` all pass.
-- [ ] `dist/` and `node_modules/` are git-ignored.
+- [x] `node dist/standalone/cli.js` exits 0 with no output.
+- [x] `pnpm install`, `pnpm build`, `pnpm test`, and `pnpm typecheck` all pass.
+- [x] `dist/` and `node_modules/` are git-ignored.
 
 ## Files Changed
 

@@ -178,7 +178,7 @@ Run parallel tasks in separate worktrees, each starting from the tip of `feat/re
 
 | # | File | Wave | Depends on | Blocks |
 |---|---|---|---|---|
-| 1 | [001-1-scaffold.md](001-1-scaffold.md) | 1 | — | 2, 3, 4, 8 |
+| 1 | [001-1-scaffold.md](001-1-scaffold.md) ✅ | 1 | — | 2, 3, 4, 8 |
 | 2 | [001-2-protocol.md](001-2-protocol.md) | 2 | 1 | 5, 6, 7 |
 | 3 | [001-3-config-keys.md](001-3-config-keys.md) | 2 | 1 | 5, 6, 7 |
 | 4 | [001-4-slack-api.md](001-4-slack-api.md) | 2 | 1 | 7, 9 |
