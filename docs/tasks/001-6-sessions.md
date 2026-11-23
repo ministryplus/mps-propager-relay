@@ -1,7 +1,7 @@
 # Task 001-6: Session hub (handshake, auth, replace, ping/idle, seq + resume)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 3 (parallel with [001-5](001-5-router.md), [001-7](001-7-outbound.md), [001-9](001-9-socket-mode.md) — disjoint files)
 **Depends on:** [001-2](001-2-protocol.md), [001-3](001-3-config-keys.md)
 **Blocks:** [001-10](001-10-relay-assembly.md)
@@ -134,43 +134,43 @@ wired until 001-10.
 
 ## Acceptance Criteria
 
-- [ ] `createSessionHub`, `Principal`, and `RequestHandler` match the plan's
+- [x] `createSessionHub`, `Principal`, and `RequestHandler` match the plan's
       signatures exactly, and the hub satisfies `Delivery`.
-- [ ] No `hello` within `handshakeTimeoutMs` → `4004`; a first frame other
+- [x] No `hello` within `handshakeTimeoutMs` → `4004`; a first frame other
       than `hello`, a second `hello`, a frame over `maxFrameBytes`, or an
       unparseable frame → `4000`.
-- [ ] A key matching no hash for the requested role → `4001` (a site key
+- [x] A key matching no hash for the requested role → `4001` (a site key
       used with `role: 'viewer'` is rejected); `protocol !== 1` → `error`
       frame, then `4002`. Every relay-initiated `4xxx` close is preceded by
       an `error` frame.
-- [ ] `welcome` carries `protocol`, `role`, `name`, `channels` (viewer `'*'`
+- [x] `welcome` carries `protocol`, `role`, `name`, `channels` (viewer `'*'`
       expanded), `epoch`, `resumed`, `relay.version`, and is followed by a
       `status` frame.
-- [ ] A second site connection with the same key closes the first with
+- [x] A second site connection with the same key closes the first with
       `4003` and receives the site's messages from then on; the late
       `closed()` of the old one doesn't disconnect the new one. Several
       viewer connections coexist.
-- [ ] `ping` → `pong`; no frame for `idleTimeoutMs` → `4005`, and any frame
+- [x] `ping` → `pong`; no frame for `idleTimeoutMs` → `4005`, and any frame
       resets the timer.
-- [ ] Each site's messages carry a monotonic `seq`; messages routed while the
+- [x] Each site's messages carry a monotonic `seq`; messages routed while the
       site is disconnected are buffered for `resumeWindowMs`, at most
       `resumeMaxEvents`.
-- [ ] `resume` with the current epoch and a `seq` whose successor is buffered
+- [x] `resume` with the current epoch and a `seq` whose successor is buffered
       replays every later message and answers `resumed: true`; a wrong
       epoch, an expired or evicted `seq + 1`, or no `resume` answers
       `resumed: false` and replays nothing.
-- [ ] Viewers get only messages in their channels; sites get only what
+- [x] Viewers get only messages in their channels; sites get only what
       `toSite` sends them.
-- [ ] `reply`/`react` from a viewer and `post`/`history` from a site get a
+- [x] `reply`/`react` from a viewer and `post`/`history` from a site get a
       `not_allowed` `result` and never reach the `RequestHandler`; allowed
       requests reach it with the right `Principal`, and its result is sent
       back on the same connection.
-- [ ] `setSlackStatus` sends a `status` frame to every authenticated
+- [x] `setSlackStatus` sends a `status` frame to every authenticated
       connection only when the value changes.
-- [ ] `health()` reports each site's `connected` and `lastSeenMs` and the
+- [x] `health()` reports each site's `connected` and `lastSeenMs` and the
       viewer count; `closeAll(1001, …)` closes every connection.
-- [ ] `src/core/session.ts` imports no HTTP or WebSocket library.
-- [ ] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
+- [x] `src/core/session.ts` imports no HTTP or WebSocket library.
+- [x] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
 
 ## Files Changed
 
@@ -261,3 +261,11 @@ grep -nE "from '(h3|crossws|ws|node:http)'" src/core/session.ts   # no output
   the site's live connection, kept after it disconnects, `null` if never
   connected. The plan doesn't define its meaning; 001-10 passes it through to
   `HealthReport`.
+- **Implementation notes (001-6).** `Delivery` is declared locally in
+  `session.ts` with a `TODO(001-5)` because `router.ts` had not landed in
+  this worktree; switch to `import type { Delivery } from './router.js'` when
+  merging. `fail()` releases the connection the same way `closed()` does
+  (timers, viewer set, site slot if still held), so an idle or bad-frame
+  close shows the site disconnected in `health()` without waiting for the
+  transport's `closed()`. The `hello` itself sets the site's `lastSeenMs`.
+  A rejected key is logged at `warn` with the role and client name/version.
