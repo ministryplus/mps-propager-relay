@@ -6,16 +6,8 @@
 import type { PostFrame, ReactFrame, RelayMessage, ReplyFrame, ResultFrame, ResultError } from '../protocol/types.js';
 import type { ResolvedConfig } from './config.js';
 import type { Logger } from './logger.js';
+import type { Principal } from './session.js';
 import { SlackApiError, type SlackApi } from './slack-api.js';
-
-// TODO(001-6): replace with `import type { Principal } from './session.js'` when session.ts lands.
-/** Who is asking (identical to session.ts's `Principal`, plan "Interfaces between tasks"). */
-interface Principal {
-  role: 'site' | 'viewer';
-  name: string;
-  channels: string[];
-  canPost: boolean;
-}
 
 type OutboundFrame = ReplyFrame | ReactFrame | PostFrame;
 

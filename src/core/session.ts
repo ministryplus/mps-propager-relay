@@ -23,13 +23,7 @@ import {
 import type { ResolvedConfig } from './config.js';
 import { verifyKey } from './keys.js';
 import type { Logger } from './logger.js';
-
-// TODO(001-5): replace with `import type { Delivery } from './router.js'` once router.ts lands.
-/** Implemented by the session hub; the router calls it (Spec 001 task 5). */
-export interface Delivery {
-  toSite(site: string, msg: RelayMessage): void;
-  toViewers(msg: RelayMessage): void;
-}
+import type { Delivery } from './router.js';
 
 /** Who is on the other end of an authenticated connection. */
 export interface Principal {
