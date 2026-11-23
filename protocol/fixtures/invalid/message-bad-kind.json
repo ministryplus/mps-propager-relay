@@ -1,0 +1,12 @@
+{
+  "type": "message",
+  "seq": 42,
+  "eventId": "Ev07ABCDEF12",
+  "channel": "C0123ABC",
+  "ts": "1732291200.000100",
+  "text": "1234",
+  "kind": "dm",
+  "user": "U0456DEF",
+  "fromSelf": false,
+  "origin": "slack"
+}

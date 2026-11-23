@@ -1,0 +1,14 @@
+{
+  "type": "welcome",
+  "protocol": 1,
+  "role": "site",
+  "name": "north",
+  "channels": [
+    "C0123ABC"
+  ],
+  "epoch": "p7d2w5n4z9",
+  "resumed": false,
+  "relay": {
+    "version": "0.1.0"
+  }
+}

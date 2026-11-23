@@ -1,7 +1,7 @@
 # Task 001-2: Protocol v1 artifacts (reference, schema, fixtures, types, parser)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 2 (parallel with [001-3](001-3-config-keys.md), [001-4](001-4-slack-api.md), [001-8](001-8-events-api.md) — disjoint files: `protocol/`, `src/protocol/`, `test/protocol/`)
 **Depends on:** [001-1](001-1-scaffold.md)
 **Blocks:** [001-5](001-5-router.md), [001-6](001-6-sessions.md), [001-7](001-7-outbound.md)
@@ -158,28 +158,28 @@ these yet; waves 3+ code against them.
 
 ## Acceptance Criteria
 
-- [ ] `src/protocol/types.ts` exports `RelayMessage`, every frame interface,
+- [x] `src/protocol/types.ts` exports `RelayMessage`, every frame interface,
       `ClientFrame`, `ServerFrame`, `PROTOCOL_VERSION`, and `CLOSE` with the
       plan's exact names and values.
-- [ ] `src/protocol/parse.ts` exports `parseClientFrame`, `parseServerFrame`,
+- [x] `src/protocol/parse.ts` exports `parseClientFrame`, `parseServerFrame`,
       and `ProtocolError`; both parsers throw only `ProtocolError` for any
       bad input (bad JSON, non-object, unknown or wrong-direction type,
       missing/mistyped field).
-- [ ] `hello` with any integer `protocol ≥ 1` parses; `welcome` requires `protocol: 1`.
-- [ ] `frame.schema.json` is JSON Schema 2020-12, `oneOf` every frame by
+- [x] `hello` with any integer `protocol ≥ 1` parses; `welcome` requires `protocol: 1`.
+- [x] `frame.schema.json` is JSON Schema 2020-12, `oneOf` every frame by
       `type`, and does not forbid additional properties.
-- [ ] `protocol/fixtures/valid/` has at least one fixture per frame type
+- [x] `protocol/fixtures/valid/` has at least one fixture per frame type
       (13 types), including `message-channel`, `message-thread`,
       `result-ok`, and `result-error`.
-- [ ] `protocol/fixtures/invalid/` includes at least `hello-missing-key`,
+- [x] `protocol/fixtures/invalid/` includes at least `hello-missing-key`,
       `message-bad-kind`, `unknown-type`, and `wrong-protocol-type`.
-- [ ] Every valid fixture passes ajv and its direction's parser, and fails
+- [x] Every valid fixture passes ajv and its direction's parser, and fails
       the other direction's parser; every invalid fixture fails ajv (or
       JSON parsing) and both parsers.
-- [ ] `protocol/VERSION` is `1`; `protocol/README.md` documents every frame,
+- [x] `protocol/VERSION` is `1`; `protocol/README.md` documents every frame,
       every close code, resume, and the Decision 14 versioning rule.
-- [ ] `ajv` is used only in tests; nothing under `src/` imports it.
-- [ ] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
+- [x] `ajv` is used only in tests; nothing under `src/` imports it.
+- [x] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
 
 ## Files Changed
 
@@ -228,3 +228,15 @@ these yet; waves 3+ code against them.
   in `types.ts`, parsers and `ProtocolError` in `parse.ts`.
 - **`kind: 'channel'` with a `threadTs`** is not rejected (the spec only says
   `threadTs` is set when `kind === 'thread'`). Normalizing never produces it.
+- **Implementation notes (filled gaps).**
+  - `CLOSE` lives in `types.ts` (as Step 1 says) and `parse.ts` re-exports it,
+    so imports from either path in the plan's interface block work.
+  - `ProtocolError` names the failing field (`reply.threadTs must be a string`);
+    nested objects (`hello.client`, `hello.resume`, `welcome.relay`,
+    `history_result.messages[i]`) are also stripped of unknown fields.
+  - A field that is present but `null` is treated as present and mistyped
+    (schema and parser agree: `"threadTs": null` is rejected).
+  - The README says `hello.resume.seq` is `0` when the client has processed
+    nothing (the schema allows `seq ≥ 0`); the spec doesn't say what to send.
+  - The fixture coverage check lists the 13 types in the test and checks at
+    compile time that the list equals `ClientFrame['type'] | ServerFrame['type']`.

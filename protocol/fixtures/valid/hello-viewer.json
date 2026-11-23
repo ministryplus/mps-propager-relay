@@ -1,0 +1,10 @@
+{
+  "type": "hello",
+  "protocol": 1,
+  "role": "viewer",
+  "key": "prk_8c2e4a6f0b1d3e5f7a9c1e3b5d7f9a0c",
+  "client": {
+    "name": "church-portal",
+    "version": "1.2.0"
+  }
+}

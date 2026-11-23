@@ -1,0 +1,14 @@
+{
+  "type": "hello",
+  "protocol": 1,
+  "role": "site",
+  "key": "prk_3f9a1c7e5b2d4f60a8e1c9b7d5f3a1e2",
+  "client": {
+    "name": "ProPager",
+    "version": "0.6.0"
+  },
+  "resume": {
+    "epoch": "k3v9q2m8x1",
+    "seq": 41
+  }
+}
