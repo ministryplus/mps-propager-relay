@@ -1,7 +1,7 @@
 # Task 001-11: h3 handlers, standalone server, end-to-end test
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 5 (solo — needs a working `Relay`)
 **Depends on:** [001-10](001-10-relay-assembly.md)
 **Blocks:** [001-12](001-12-release.md)
@@ -161,27 +161,27 @@ fake Slack.
 
 ## Acceptance Criteria
 
-- [ ] `createRelayHandlers(relay)` returns `slackEvents`, `socket`, and
+- [x] `createRelayHandlers(relay)` returns `slackEvents`, `socket`, and
       `health`, built only from `h3` APIs (`readRawBody`,
       `defineWebSocketHandler`, `defineEventHandler`).
-- [ ] `slackEvents` hands the relay the raw body string and returns its
+- [x] `slackEvents` hands the relay the raw body string and returns its
       status, headers, and body unchanged.
-- [ ] Each crossws peer maps to exactly one `relay.openConnection`; its text
+- [x] Each crossws peer maps to exactly one `relay.openConnection`; its text
       frames reach `receive`, and its close reaches `closed`.
-- [ ] `health` returns the `HealthReport` as JSON with 200 when Slack is
+- [x] `health` returns the `HealthReport` as JSON with 200 when Slack is
       connected and 503 otherwise.
-- [ ] `propager-relay serve --config <file>` reads sites, viewers, limits,
+- [x] `propager-relay serve --config <file>` reads sites, viewers, limits,
       and ingress from the file and the secrets from env, defaults to
       `0.0.0.0:8787`, serves `POST /slack/events`, `GET /ws`, and
       `GET /healthz`, and stops on `SIGTERM`/`SIGINT` after closing
       connections with `1001`.
-- [ ] Missing env vars are reported together; secrets in the file are
+- [x] Missing env vars are reported together; secrets in the file are
       rejected.
-- [ ] `propager-relay keygen` prints a key and its hash in the Decision 3
+- [x] `propager-relay keygen` prints a key and its hash in the Decision 3
       format, and the hash verifies the key.
-- [ ] Upgrades on any path other than `/ws` are refused.
-- [ ] `src/core` imports neither `h3` nor `crossws`.
-- [ ] The end-to-end test passes over real HTTP and WebSocket;
+- [x] Upgrades on any path other than `/ws` are refused.
+- [x] `src/core` imports neither `h3` nor `crossws`.
+- [x] The end-to-end test passes over real HTTP and WebSocket;
       `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
 
 ## Files Changed
@@ -240,3 +240,36 @@ kill -TERM %1                           # logs shutdown, exits 0
   adapter's own `maxPayload` default (100 MiB in `ws`) is left alone; set
   `serverOptions: { maxPayload }` only if a test shows the hub's check isn't
   enough.
+- **Implementation notes (001-11, gaps filled):**
+  - **Step 2 wiring confirmed by running:** `crossws(app.websocket)` resolves
+    the router's `GET /ws` route; the hooks didn't need passing directly.
+    Unknown-path upgrades get `404` written to the socket and closed (instead
+    of a bare `destroy()`), so a client sees a clear refusal; the e2e test
+    checks it.
+  - **`loadConfig` takes the parsed JSON (`unknown`)**, not only a typed
+    `StandaloneFile`, and shape-checks it before `validateConfig` (which
+    assumes arrays and would throw a `TypeError` on, say, a missing
+    `sites`): object file, known `ingress`, `sites`/`viewers` element shapes,
+    `limits` an object. Shape problems, a `slack` key, and missing env vars
+    all go into one `ConfigError`. An empty env var counts as missing.
+  - **CLI is testable in-process:** `cli.ts` exports `run(argv, io)` (exit
+    code, or `null` while `serve` runs) and calls it only when it is the
+    process entry point (`realpath` of `argv[1]`, so a bin symlink works).
+    The config tests cover `keygen`, usage (exit 2, including an unknown
+    flag), and every `serve` error path (exit 1). A config error, unreadable
+    or non-JSON file, or failed listen prints to stderr and exits 1.
+  - **Signals:** the first `SIGTERM`/`SIGINT` stops the server and exits 0;
+    a second exits 1 at once. Verified manually (not in `pnpm test`, which
+    never starts `serve` against real Slack).
+  - **`stop()`** = `relay.stop()` → `ws.closeAll(1001)` → `server.close()`
+    with `closeIdleConnections()` so keep-alive sockets don't hold it open.
+    If `listen` fails, `startServer` stops the relay and rejects.
+  - **Manual smoke (2026-11-22):** `keygen` and usage/exit 2 as specified;
+    `serve` with dummy tokens on `127.0.0.1:8790` gave `/healthz` 503 while
+    `auth.test` failed with `invalid_auth` and retried (logged, no crash; the
+    fake token does reach slack.com, since the CLI has no Slack URL
+    override); a `ws` site got `welcome` + `status`; `SIGTERM` closed it with
+    `1001` and exited 0. `SIGINT` on default host `0.0.0.0:8791` also exited
+    0; unsigned `POST /slack/events` → 401, plain `GET /ws` → 426; a missing
+    `SLACK_SIGNING_SECRET` printed the error and exited 1.
+  - No earlier module needed a fix.

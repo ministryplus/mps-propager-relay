@@ -188,7 +188,7 @@ Run parallel tasks in separate worktrees, each starting from the tip of `feat/re
 | 8 | [001-8-events-api.md](001-8-events-api.md) ✅ | 2 | 1 | 10 |
 | 9 | [001-9-socket-mode.md](001-9-socket-mode.md) ✅ | 3 | 4 | 10 |
 | 10 | [001-10-relay-assembly.md](001-10-relay-assembly.md) ✅ | 4 | 5, 6, 7, 8, 9 | 11 |
-| 11 | [001-11-h3-standalone.md](001-11-h3-standalone.md) | 5 | 10 | 12 |
+| 11 | [001-11-h3-standalone.md](001-11-h3-standalone.md) ✅ | 5 | 10 | 12 |
 | 12 | [001-12-release.md](001-12-release.md) | 6 | 11 | — |
 
 ## Notes
