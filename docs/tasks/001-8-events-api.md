@@ -1,7 +1,7 @@
 # Task 001-8: Events API ingress (signature check, url_verification, 200 then sink)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 2 (parallel with [001-2](001-2-protocol.md), [001-3](001-3-config-keys.md), [001-4](001-4-slack-api.md) — disjoint files)
 **Depends on:** [001-1](001-1-scaffold.md)
 **Blocks:** [001-10](001-10-relay-assembly.md)
@@ -93,26 +93,26 @@ plan, and tests use a recording sink.
 
 ## Acceptance Criteria
 
-- [ ] `createEventsApiIngress` and `SlackEventSink` are exported from
+- [x] `createEventsApiIngress` and `SlackEventSink` are exported from
       `src/core/ingress/events-api.ts` with the shapes above.
-- [ ] A request signed with the right secret over the exact raw body, with a
+- [x] A request signed with the right secret over the exact raw body, with a
       timestamp within 300 s, is accepted; both fixed vectors verify.
-- [ ] A wrong signature, a signature over a different body (one byte
+- [x] A wrong signature, a signature over a different body (one byte
       changed), a different-length signature, a missing header, a
       non-numeric timestamp, or a timestamp more than 300 s in the past or
       future → 401 with no body, and the sink is never called.
-- [ ] Header names match case-insensitively (`X-Slack-Signature`,
+- [x] Header names match case-insensitively (`X-Slack-Signature`,
       `x-slack-signature`, `X-SLACK-SIGNATURE`).
-- [ ] `url_verification` → 200, `text/plain`, body equal to `challenge`.
-- [ ] `event_callback` → 200 with no body; the sink is called once with
+- [x] `url_verification` → 200, `text/plain`, body equal to `challenge`.
+- [x] `event_callback` → 200 with no body; the sink is called once with
       `{ eventId, event }` only after `handle()`'s promise has resolved, and a
       throwing sink doesn't throw out of `handle()` or crash the process.
-- [ ] Other types and unparseable verified bodies → 200, sink not called.
-- [ ] Failure logs contain the reason but never the request body.
-- [ ] Signatures are compared with `crypto.timingSafeEqual`.
-- [ ] The file imports only `node:crypto` and the relay's own modules (no
+- [x] Other types and unparseable verified bodies → 200, sink not called.
+- [x] Failure logs contain the reason but never the request body.
+- [x] Signatures are compared with `crypto.timingSafeEqual`.
+- [x] The file imports only `node:crypto` and the relay's own modules (no
       HTTP library).
-- [ ] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
+- [x] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
 
 ## Files Changed
 
@@ -183,3 +183,11 @@ printf '%s' 'v0:1700000000:{"type":"url_verification","challenge":"3eZbrw1aBm2rZ
   falls under that rule rather than a 400.
 - **Future timestamps** are rejected the same as past ones (`|now − ts| > 300 s`),
   as Decision 4 says "more than 300 s from now".
+- **Filled in on implementation.** A non-numeric timestamp logs
+  `bad timestamp` (distinct from `stale timestamp`); both answer 401. A
+  signature whose UTF-8 byte length differs from the expected one (e.g. a
+  multi-byte character) fails the length check before `timingSafeEqual`, so
+  it never throws. The response type is also exported as `EventsApiResponse`
+  (same shape as the plan's inline type). Failure logs carry the reason and
+  the timestamp header only; the sink-error log carries `eventId` and the
+  error.
