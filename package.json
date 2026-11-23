@@ -27,6 +27,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "dev:site": "node scripts/dev-site.ts",
     "prepare": "pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"

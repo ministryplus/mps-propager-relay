@@ -1,7 +1,7 @@
 # Task 001-12: dev:site, README, ADR addendum, v0.1.0 and live verification
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** In progress — local steps 1–5 done; awaiting approval for merge/tag/push (step 6)
 **Parallel group:** Wave 6 (solo — tagging and pushing `v0.1.0` is outward-facing and **needs the user's go-ahead**)
 **Depends on:** [001-11](001-11-h3-standalone.md)
 **Blocks:** — (unblocks mps-propager Spec 004)
@@ -141,17 +141,17 @@ Verification 1–10 against a test Slack workspace with the user.
 
 ## Acceptance Criteria
 
-- [ ] `pnpm dev:site --url … --key …` connects as a site, prints every
+- [x] `pnpm dev:site --url … --key …` connects as a site, prints every
       frame with `epoch` and `seq`, and answers each top-level message with
       "relay saw <text>" in its thread and a 👀.
-- [ ] `--resume <epoch>:<seq>` sends `resume` in `hello`; `--role viewer`
+- [x] `--resume <epoch>:<seq>` sends `resume` in `hello`; `--role viewer`
       accepts `history <channel>` and `post <channel> <text>` from stdin.
-- [ ] `scripts/dev-site.ts` passes `pnpm typecheck` and is not in the
+- [x] `scripts/dev-site.ts` passes `pnpm typecheck` and is not in the
       package (`pnpm pack --dry-run`).
-- [ ] README shows v0.1.0 and covers install (with the `allowBuilds`
+- [x] README shows v0.1.0 and covers install (with the `allowBuilds`
       entry), keygen, running standalone, Slack app setup for both ingress
       modes (scopes, events, tokens), mounting in h3/Nitro, and viewers.
-- [ ] The founding ADR has an addendum recording Spec Decision 8's
+- [x] The founding ADR has an addendum recording Spec Decision 8's
       refinement of Decision 6 and correcting the "viewers never page" row
       (viewers with `canPost` post, and posts page); the original text is
       unchanged.
@@ -178,6 +178,7 @@ Verification 1–10 against a test Slack workspace with the user.
 | File | Action |
 |---|---|
 | scripts/dev-site.ts | Create |
+| test/scripts/dev-site.test.ts | Create (not in the original plan; see Notes) |
 | package.json | Modify (`dev:site` script; `version` only if not already `0.1.0`) |
 | README.md | Modify |
 | docs/adr/001-founding-propager-relay.md | Modify (addendum) |
@@ -235,3 +236,25 @@ Live: Spec Verification 1–9 with the user, checklist above.
   viewer posting in the same section.
 - `dev:site` exits on any close instead of reconnecting, which is the
   simplest reading of Decision 13 and what Verification 5 expects.
+- **Implementation notes (001-12 steps 1–5, 2026-11-22):**
+  - **Automated `dev:site` test:** `test/scripts/dev-site.test.ts` spawns
+    `node scripts/dev-site.ts` against `startServer` on an ephemeral port
+    with the in-memory `FakeSlackApi`: usage exits 2; as a site it prints
+    `hello` (with the package version), `welcome`, `epoch=… resumed=false`,
+    `seq=…`, and answers a signed `1234` with `reply` "relay saw 1234" in the
+    thread and `react` `eyes`; a second `--resume <epoch>:<seq-1>` instance
+    gets `resumed=true` and the replay while the first exits 1 on `4003`;
+    `SIGINT` exits 0. As a viewer: help on an unknown line, `history` →
+    `history_result`, `post` → `chat.postMessage` with the rest of the line
+    as text, end of stdin → close `1000`, exit 0.
+  - **Viewer end of input:** not in the steps; `dev:site --role viewer`
+    closes with `1000` when stdin ends, so a piped script finishes.
+  - **Manual check (step 5):** real CLI `serve` with `xoxb-fake` on
+    `127.0.0.1:8793`: `/healthz` 503 while `auth.test` failed with
+    `invalid_auth` and retried; `pnpm dev:site` as a site and as a viewer
+    both printed `welcome`, `epoch=… resumed=false`, and `status`; `history
+    C0123ABC` returned `history_result`; `ping`/`pong` every 25 s; `SIGTERM`
+    to the server closed the site with `1001` and it exited 0.
+  - **README `allowBuilds` key** uses ADR 001 Decision 4's placeholder
+    format (`<resolved git url>#<commit sha>`) and says pnpm prints the
+    exact key; step 8 replaces it with the recorded format if it differs.
