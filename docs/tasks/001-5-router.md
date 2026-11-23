@@ -1,7 +1,7 @@
 # Task 001-5: Router (normalize, dedupe, age, echo filter, routing)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 3 (parallel with [001-6](001-6-sessions.md), [001-7](001-7-outbound.md), [001-9](001-9-socket-mode.md) — disjoint files)
 **Depends on:** [001-2](001-2-protocol.md), [001-3](001-3-config-keys.md)
 **Blocks:** [001-10](001-10-relay-assembly.md)
@@ -106,32 +106,32 @@ clock. Nothing is wired yet; `createRelay` (001-10) connects ingress →
 
 ## Acceptance Criteria
 
-- [ ] `normalize` and `createRouter` match the plan's signatures exactly;
+- [x] `normalize` and `createRouter` match the plan's signatures exactly;
       `Delivery` is exported from `src/core/router.ts`; `BotIdentity` is imported from `src/core/slack-api.ts`.
-- [ ] Only `type: 'message'` with no subtype or `thread_broadcast`,
+- [x] Only `type: 'message'` with no subtype or `thread_broadcast`,
       `file_share`, `bot_message` produces a `RelayMessage`; every other
       subtype returns `null`.
-- [ ] `kind: 'thread'` with `threadTs` exactly when `thread_ts` is present and
+- [x] `kind: 'thread'` with `threadTs` exactly when `thread_ts` is present and
       differs from `ts`, including `thread_broadcast`; a parent with
       `thread_ts === ts` is `kind: 'channel'` with no `threadTs`.
-- [ ] `fromSelf` is `true` when `user` matches the bot user id or `bot_id`
+- [x] `fromSelf` is `true` when `user` matches the bot user id or `bot_id`
       matches the bot id, never on an empty id, and `false` with no identity.
-- [ ] Messages from channels no site or viewer is configured for never reach
+- [x] Messages from channels no site or viewer is configured for never reach
       `Delivery`.
-- [ ] A repeated `eventId` within 10 minutes is dropped; after 10 minutes (or
+- [x] A repeated `eventId` within 10 minutes is dropped; after 10 minutes (or
       after 5,000 newer ids) it is accepted again.
-- [ ] A message older than `maxEventAgeMs` reaches viewers but not the site.
-- [ ] The bot's own messages reach viewers (with `fromSelf: true`) but never
+- [x] A message older than `maxEventAgeMs` reaches viewers but not the site.
+- [x] The bot's own messages reach viewers (with `fromSelf: true`) but never
       a site. Before `setBotIdentity`, any message with a `botId` reaches
       viewers but not a site; after it, another bot's message reaches its site.
-- [ ] Each message goes to exactly the site that owns its channel and never to
+- [x] Each message goes to exactly the site that owns its channel and never to
       another site.
-- [ ] A `route()`d message with `origin: 'relay'`, `fromSelf: false` and no
+- [x] A `route()`d message with `origin: 'relay'`, `fromSelf: false` and no
       `user`/`botId` reaches the owning site, not viewers, and is subject to
       dedupe and age.
-- [ ] `src/core/normalize.ts` and `src/core/router.ts` import no HTTP or
+- [x] `src/core/normalize.ts` and `src/core/router.ts` import no HTTP or
       WebSocket library.
-- [ ] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
+- [x] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
 
 ## Files Changed
 
@@ -204,3 +204,10 @@ grep -nE "from '(h3|crossws|ws|node:http)'" src/core/normalize.ts src/core/route
   builds them with `fromSelf: false` and no `user`/`botId`.
 - **Age uses Slack's `ts`** (seconds since the epoch, as a decimal string), not
   the time of arrival, as Decision 5 says.
+- **Implementation notes (001-5).** `validateConfig` allows a viewer to list a
+  channel no site owns, so the configured set includes those; such a channel
+  reaches viewers only (tested with a `C0VIEWONLY` viewer). `router.ts` also
+  re-exports `normalize` (the plan lists it in the router block) and exports
+  `DEDUPE_TTL_MS` / `DEDUPE_MAX`. Dedupe evicts entries strictly older than
+  10 min, so an id is still a duplicate at exactly 10 min and accepted at
+  10 min + 1 ms. A non-string `subtype` returns `null`.
