@@ -1,0 +1,13 @@
+{
+  "type": "message",
+  "seq": 44,
+  "eventId": "Ev07ABCDEF14",
+  "channel": "C0123ABC",
+  "ts": "1732291300.000300",
+  "text": "Got it",
+  "kind": "thread",
+  "fromSelf": true,
+  "origin": "slack",
+  "threadTs": "1732291200.000100",
+  "botId": "B0789GHI"
+}

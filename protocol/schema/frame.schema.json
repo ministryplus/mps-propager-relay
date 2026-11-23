@@ -1,0 +1,511 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProPager relay protocol 1 frame",
+  "description": "Any frame of protocol 1. Unknown properties are allowed: adding an optional field keeps protocol 1.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/clientFrame"
+    },
+    {
+      "$ref": "#/$defs/serverFrame"
+    }
+  ],
+  "$defs": {
+    "relayMessage": {
+      "description": "A Slack message as the relay delivers it",
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "description": "Slack event_id; \"relay:<ts>\" for relay-originated posts"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "ts": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "channel",
+            "thread"
+          ]
+        },
+        "threadTs": {
+          "type": "string",
+          "description": "Set when kind is \"thread\""
+        },
+        "user": {
+          "type": "string"
+        },
+        "botId": {
+          "type": "string"
+        },
+        "fromSelf": {
+          "type": "boolean"
+        },
+        "origin": {
+          "enum": [
+            "slack",
+            "relay"
+          ]
+        }
+      },
+      "required": [
+        "eventId",
+        "channel",
+        "ts",
+        "text",
+        "kind",
+        "fromSelf",
+        "origin"
+      ],
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "thread"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "threadTs"
+        ]
+      }
+    },
+    "hello": {
+      "description": "Client → relay. First frame only.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "hello"
+        },
+        "protocol": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "role": {
+          "enum": [
+            "site",
+            "viewer"
+          ]
+        },
+        "key": {
+          "type": "string"
+        },
+        "client": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version"
+          ]
+        },
+        "resume": {
+          "type": "object",
+          "properties": {
+            "epoch": {
+              "type": "string"
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "epoch",
+            "seq"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "protocol",
+        "role",
+        "key",
+        "client"
+      ]
+    },
+    "reply": {
+      "description": "Client → relay. Sites: reply in a thread.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "reply"
+        },
+        "id": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "threadTs": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "channel",
+        "threadTs",
+        "text"
+      ]
+    },
+    "react": {
+      "description": "Client → relay. Sites: add a reaction.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "react"
+        },
+        "id": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "ts": {
+          "type": "string"
+        },
+        "emoji": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "channel",
+        "ts",
+        "emoji"
+      ]
+    },
+    "post": {
+      "description": "Client → relay. Viewers with canPost.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "post"
+        },
+        "id": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "threadTs": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "channel",
+        "text"
+      ]
+    },
+    "history": {
+      "description": "Client → relay. Viewers: recent messages (limit ≤ historySize).",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "history"
+        },
+        "id": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "channel"
+      ]
+    },
+    "ping": {
+      "description": "Client → relay. At least every 30 s.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "ping"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "welcome": {
+      "description": "Relay → client. Answers hello.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "welcome"
+        },
+        "protocol": {
+          "const": 1
+        },
+        "role": {
+          "enum": [
+            "site",
+            "viewer"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "epoch": {
+          "type": "string"
+        },
+        "resumed": {
+          "type": "boolean"
+        },
+        "relay": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "version"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "protocol",
+        "role",
+        "name",
+        "channels",
+        "epoch",
+        "resumed",
+        "relay"
+      ]
+    },
+    "message": {
+      "description": "Relay → client. A routed message: seq plus every relayMessage field.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/relayMessage"
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "message"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "type",
+        "seq"
+      ]
+    },
+    "result": {
+      "description": "Relay → client. One per reply/react/post.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "result"
+        },
+        "id": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "ts": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string",
+          "pattern": "^(not_allowed|invalid|rate_limited|slack:.+)$"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "ok"
+      ],
+      "if": {
+        "properties": {
+          "ok": {
+            "const": false
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "then": {
+        "required": [
+          "error"
+        ]
+      }
+    },
+    "history_result": {
+      "description": "Relay → client. Answers history.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "history_result"
+        },
+        "id": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relayMessage"
+          },
+          "description": "Oldest first"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "channel",
+        "messages"
+      ]
+    },
+    "status": {
+      "description": "Relay → client. After welcome and on every change.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "status"
+        },
+        "slack": {
+          "enum": [
+            "connected",
+            "disconnected"
+          ]
+        },
+        "slackSharedApp": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "slack",
+        "slackSharedApp"
+      ]
+    },
+    "pong": {
+      "description": "Relay → client. Answers ping.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "pong"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "error": {
+      "description": "Relay → client. Sent before a fatal close.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "error"
+        },
+        "code": {
+          "type": "integer",
+          "description": "The close code that follows"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "code",
+        "message"
+      ]
+    },
+    "clientFrame": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/hello"
+        },
+        {
+          "$ref": "#/$defs/reply"
+        },
+        {
+          "$ref": "#/$defs/react"
+        },
+        {
+          "$ref": "#/$defs/post"
+        },
+        {
+          "$ref": "#/$defs/history"
+        },
+        {
+          "$ref": "#/$defs/ping"
+        }
+      ]
+    },
+    "serverFrame": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/welcome"
+        },
+        {
+          "$ref": "#/$defs/message"
+        },
+        {
+          "$ref": "#/$defs/result"
+        },
+        {
+          "$ref": "#/$defs/history_result"
+        },
+        {
+          "$ref": "#/$defs/status"
+        },
+        {
+          "$ref": "#/$defs/pong"
+        },
+        {
+          "$ref": "#/$defs/error"
+        }
+      ]
+    }
+  }
+}

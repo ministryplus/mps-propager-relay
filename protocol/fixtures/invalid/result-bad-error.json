@@ -1,0 +1,6 @@
+{
+  "type": "result",
+  "id": "r1",
+  "ok": false,
+  "error": "boom"
+}

@@ -1,0 +1,11 @@
+{
+  "type": "message",
+  "seq": 45,
+  "eventId": "relay:1732291400.000400",
+  "channel": "C0123ABC",
+  "ts": "1732291400.000400",
+  "text": "5678",
+  "kind": "channel",
+  "fromSelf": false,
+  "origin": "relay"
+}

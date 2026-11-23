@@ -1,0 +1,5 @@
+{
+  "type": "error",
+  "code": 4002,
+  "message": "Unsupported protocol 2; this relay speaks protocol 1"
+}
