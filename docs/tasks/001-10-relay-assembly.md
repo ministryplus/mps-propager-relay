@@ -1,7 +1,7 @@
 # Task 001-10: Relay assembly (createRelay, history, in-process viewers, core exports)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 4 (solo — wires every core module and owns `src/core/index.ts`)
 **Depends on:** [001-5](001-5-router.md), [001-6](001-6-sessions.md), [001-7](001-7-outbound.md), [001-8](001-8-events-api.md), [001-9](001-9-socket-mode.md)
 **Blocks:** [001-11](001-11-h3-standalone.md)
@@ -162,32 +162,32 @@ plan.
 
 ## Acceptance Criteria
 
-- [ ] `createRelay` throws `ConfigError` for an invalid config before any
+- [x] `createRelay` throws `ConfigError` for an invalid config before any
       Slack call.
-- [ ] `start()` calls `auth.test` once, passes the ids to
+- [x] `start()` calls `auth.test` once, passes the ids to
       `router.setBotIdentity`, retries with backoff on failure, and never
       rejects for a Slack failure.
-- [ ] History holds the last `historySize` messages per channel, including
+- [x] History holds the last `historySize` messages per channel, including
       `fromSelf`, oldest first; backfill fills it from
       `SlackApi.history` after `auth.test`, retries a failed channel with
       backoff, and logs the failure.
-- [ ] `history` frames and `view.history` return at most `historySize`
+- [x] `history` frames and `view.history` return at most `historySize`
       messages, oldest first, and only for the viewer's channels.
-- [ ] The wiring matches the plan: ingress → `router.ingest`, router → hub
+- [x] The wiring matches the plan: ingress → `router.ingest`, router → hub
       as `Delivery`, hub requests → outbound or history, `onRelayPost` →
       `router.route`.
-- [ ] Slack status follows the Decision 12 note in both modes, reaches the
+- [x] Slack status follows the Decision 12 note in both modes, reaches the
       hub, and appears in `health()`.
-- [ ] `handleSlackEvent` is handled by the Events API ingress in
+- [x] `handleSlackEvent` is handled by the Events API ingress in
       `events-api` mode and answers 404 in `socket-mode`.
-- [ ] `relay.viewer()` uses `config.viewers` for channels and `canPost`,
+- [x] `relay.viewer()` uses `config.viewers` for channels and `canPost`,
       takes no key, delivers every message in its channels (including
       `fromSelf`), and its `post` follows the same rules as a `post` frame.
-- [ ] `stop()` closes every connection with `1001`, stops Socket Mode and
+- [x] `stop()` closes every connection with `1001`, stops Socket Mode and
       all retries, and is safe to call twice.
-- [ ] `src/core/index.ts` exports the values and types in step 11, and no
+- [x] `src/core/index.ts` exports the values and types in step 11, and no
       file under `dist/` that ends in `.d.ts` mentions `@slack/types`.
-- [ ] The integration test passes; `pnpm test`, `pnpm typecheck`, and
+- [x] The integration test passes; `pnpm test`, `pnpm typecheck`, and
       `pnpm build` pass.
 
 ## Files Changed
@@ -281,3 +281,29 @@ cancels retries.
   latest message on load" in ADR 001 Decision 6.
 - **In-process `post` with `threadTs`:** Decision 11's example shows `post(channel,
   text)`; the optional third argument mirrors the `post` frame's `threadTs?`.
+- **Implementation notes (001-10, gaps filled):**
+  - **Same-`ts` rule.** Step 1 says `add` *ignores* a repeated `ts`; step 3
+    and the plan say it *replaces*. Resolved as: a live `origin: 'slack'`
+    message replaces the entry with its `ts` (so the echo replaces the
+    relay-built post); an `origin: 'relay'` post never overwrites an entry
+    already there (the echo can beat the `chat.postMessage` response, Decision
+    8); backfill never overwrites (live wins). Every case leaves one entry per
+    `ts`.
+  - **Rings for viewer-only channels.** Step 1 says one ring per channel in
+    `channelOwner`, but 001-5 routes viewer-listed channels no site owns to
+    viewers, and Decision 11 says history holds "every message routed for that
+    channel". So rings (and backfill) cover site channels plus viewer-only
+    channels.
+  - **`ts` order** compares the integer and fraction parts as strings
+    (`compareTs`), not as floats, which can't hold a 16-digit Slack `ts`
+    exactly.
+  - **Socket Mode in `relay.test.ts`** is stubbed with `vi.mock` of
+    `ingress/socket-mode.js` (keeping the real `nextBackoffMs`); 001-9 tests
+    the real client against its fake server.
+  - **After `stop()`**, `handleSlackEvent` still verifies and routes (the spec
+    doesn't say to refuse), but in-process listeners receive nothing and every
+    connection is closed. `start()` after `stop()` isn't supported.
+  - `ViewerHandle.post`'s `error` is typed `ResultError` (the `result`
+    frame's own type). `HealthReport.ingress` is the configured mode.
+  - No earlier module needed a fix.
+
