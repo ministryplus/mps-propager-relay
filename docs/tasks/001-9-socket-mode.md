@@ -1,7 +1,7 @@
 # Task 001-9: Socket Mode ingress (ack, hello warning, handoff, liveness)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 3 (parallel with [001-5](001-5-router.md), [001-6](001-6-sessions.md), [001-7](001-7-outbound.md) — disjoint files)
 **Depends on:** [001-4](001-4-slack-api.md)
 **Blocks:** [001-10](001-10-relay-assembly.md)
@@ -146,30 +146,32 @@ for Slack. Nothing is wired into a relay yet (001-10).
 
 ## Acceptance Criteria
 
-- [ ] `createSocketMode` gets its URL only through
+- [x] `createSocketMode` gets its URL only through
       `SlackApi.openSocketModeUrl(appToken)` and connects with `ws`.
-- [ ] Every envelope with an `envelope_id` is acked with `{"envelope_id"}`
+- [x] Every envelope with an `envelope_id` is acked with `{"envelope_id"}`
       on the socket it arrived on, before the sink runs; a throwing sink
       doesn't prevent the ack or break the socket.
-- [ ] `events_api` envelopes reach the sink as `{ eventId, event }`; other
+- [x] `events_api` envelopes reach the sink as `{ eventId, event }`; other
       envelope types are acked and ignored.
-- [ ] On `hello`, `num_connections` greater than the client's own open
+- [x] On `hello`, `num_connections` greater than the client's own open
       sockets logs a warning and reports `slackSharedApp: true`; a later
       `hello` without the excess reports `false`. During a handoff the two
       own sockets don't count as a shared app.
-- [ ] `onStatus` reports `connected` after the first `hello`, `disconnected`
+- [x] `onStatus` reports `connected` after the first `hello`, `disconnected`
       only when no socket is left serving, and nothing during a graceful
       handoff; it fires only on changes.
-- [ ] A `disconnect` from the active socket opens exactly one replacement;
+- [x] A `disconnect` from the active socket opens exactly one replacement;
       the old socket closes only after the replacement's `hello`; a failed
       replacement leaves the active socket serving.
-- [ ] A ping goes out every `pingIntervalMs`; `staleAfterMs` with no frame
+- [x] A ping goes out every `pingIntervalMs`; `staleAfterMs` with no frame
       or pong (or no `hello` after connecting) drops the socket and
       reconnects.
-- [ ] Reconnect delays are 1 s doubling to 60 s and reset after a `hello`.
-- [ ] After `stop()`, no socket is open and no reconnect is attempted.
-- [ ] The signature is recorded in the plan's Interfaces section.
-- [ ] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
+- [x] Reconnect delays are 1 s doubling to 60 s and reset after a `hello`.
+- [x] After `stop()`, no socket is open and no reconnect is attempted.
+- [x] The signature is recorded in the plan's Interfaces section. (Already
+      there and matched exactly, so the plan was not edited; `SocketModeTiming`,
+      `nextBackoffMs`, and `createWatchdog` are extra exports not listed there.)
+- [x] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
 
 ## Files Changed
 
@@ -252,3 +254,22 @@ pnpm exec vitest run test/core/ingress/socket-mode.test.ts && pnpm test && pnpm 
   special handling.
 - `SlackStatus` deliberately matches the argument of `hub.setSlackStatus`
   (plan, 001-6), so 001-10 passes `onStatus` through unchanged.
+- **Implementation notes (gaps filled):**
+  - `SlackStatus` is a `type` alias (as the plan's Interfaces section writes
+    it) rather than the `interface` in step 1; same shape.
+  - `createWatchdog` is exported (not only internal) so the fake-timer unit
+    test can drive it directly.
+  - A pong refreshes the watchdog only after that socket's `hello`. Otherwise
+    the server's automatic pongs would keep a socket that never says `hello`
+    alive forever, and the "no `hello` → reconnect after 30 s" rule would never
+    fire. Any frame (including `hello`) always counts.
+  - If the active socket dies while a graceful `openSocketModeUrl` call is in
+    flight, the replacement becomes the active socket when it arrives (and
+    cancels the scheduled reconnect); if that call fails, a reconnect is
+    scheduled as for a non-graceful failure.
+  - Reconnect delays are logged as `socket mode: reconnecting in <n> ms`; the
+    backoff tests assert on those values (deterministic) plus loose real-time
+    lower bounds on the gaps.
+  - `stop()` mid-handoff may close the replacement while it is still in its
+    client-side handshake, so that socket's close code can be 1006 rather than
+    1000; the test only asserts that it closed.
