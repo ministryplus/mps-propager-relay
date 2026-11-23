@@ -1,7 +1,7 @@
 # Task 001-4: Slack Web API client (fetch, 429 handling, FakeSlackApi)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 2 (parallel with [001-2](001-2-protocol.md), [001-3](001-3-config-keys.md), [001-8](001-8-events-api.md) — disjoint files: `src/core/slack-api.ts`, `test/fakes/fake-slack-api.ts`, its tests)
 **Depends on:** [001-1](001-1-scaffold.md)
 **Blocks:** [001-7](001-7-outbound.md), [001-9](001-9-socket-mode.md)
@@ -154,27 +154,27 @@ that records calls and can be scripted to answer, fail, or hold, for 001-7,
 
 ## Acceptance Criteria
 
-- [ ] `SlackApi`, `SlackApiError` (`code`), and `SlackHistoryMessage` are
+- [x] `SlackApi`, `SlackApiError` (`code`), and `SlackHistoryMessage` are
       exported from `src/core/slack-api.ts` with the plan's signatures;
       `createSlackApi` returns a `SlackApi`.
-- [ ] Every call uses `Authorization: Bearer <bot token>`, except
+- [x] Every call uses `Authorization: Bearer <bot token>`, except
       `apps.connections.open`, which uses the app token passed in.
-- [ ] `chat.postMessage` always sends `unfurl_links: false`, and
+- [x] `chat.postMessage` always sends `unfurl_links: false`, and
       `thread_ts` only when given.
-- [ ] `reactions.add` answering `already_reacted` resolves; other
+- [x] `reactions.add` answering `already_reacted` resolves; other
       `ok: false` answers reject with `SlackApiError(<Slack error>)`.
-- [ ] HTTP 429 pauses that method for `Retry-After` seconds and retries the
+- [x] HTTP 429 pauses that method for `Retry-After` seconds and retries the
       same request up to 3 times, then rejects with
       `SlackApiError('rate_limited')`; other methods aren't paused.
-- [ ] Transport failures, non-2xx (non-429) statuses, non-JSON bodies, and
+- [x] Transport failures, non-2xx (non-429) statuses, non-JSON bodies, and
       timeouts reject with `SlackApiError('network')` and aren't retried.
-- [ ] The base URL, `sleep`, `now`, and timeout are injectable; the tests use
+- [x] The base URL, `sleep`, `now`, and timeout are injectable; the tests use
       a local `node:http` server and never reach slack.com.
-- [ ] `@slack/types` is imported only with `import type`, and no file in
+- [x] `@slack/types` is imported only with `import type`, and no file in
       `dist/` references `@slack/types` after `pnpm build`.
-- [ ] `FakeSlackApi` implements `SlackApi`, records every call in order, and
+- [x] `FakeSlackApi` implements `SlackApi`, records every call in order, and
       supports scripted values, errors, and held (deferred) responses.
-- [ ] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
+- [x] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
 
 ## Files Changed
 
@@ -216,3 +216,17 @@ that records calls and can be scripted to answer, fail, or hold, for 001-7,
 - **Body encoding.** Form encoding for the read methods and
   `apps.connections.open` is the safe choice; JSON for the two write methods
   keeps `unfurl_links: false` a real boolean.
+- **Implementation notes (001-4).**
+  - `@slack/types` turned out not to be needed: no event or Block Kit shape
+    fits a Web API response, so `slack-api.ts` uses a small internal
+    `SlackResponse` interface and imports nothing from it. The `import type`
+    criterion holds trivially; `grep -rn "@slack/types" dist/ src/` is empty.
+  - The plan already listed `SlackHistoryMessage` and `BotIdentity` in
+    "Interfaces between tasks", so the plan wasn't edited.
+  - Gaps filled: `chat.postMessage` without a `ts` and
+    `apps.connections.open` without a `url` reject with `'network'` (same
+    rule as a malformed `auth.test`). `history` treats a missing `messages`
+    as `[]` and drops non-object entries.
+  - The options type is exported as `SlackApiOptions`.
+  - `FakeSlackApi.history` returns `setHistory`'s messages sliced to
+    `limit`. `script()` and `setHistory()` return `this` so calls can be chained.
