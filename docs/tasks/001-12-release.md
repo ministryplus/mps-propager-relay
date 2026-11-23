@@ -1,7 +1,7 @@
 # Task 001-12: dev:site, README, ADR addendum, v0.1.0 and live verification
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** In progress — local steps 1–5 done; awaiting approval for merge/tag/push (step 6)
+**Status:** In progress — steps 1–8 done (v0.1.0 tagged and install-checked); live verification (step 9) pending
 **Parallel group:** Wave 6 (solo — tagging and pushing `v0.1.0` is outward-facing and **needs the user's go-ahead**)
 **Depends on:** [001-11](001-11-h3-standalone.md)
 **Blocks:** — (unblocks mps-propager Spec 004)
@@ -154,12 +154,17 @@ Verification 1–10 against a test Slack workspace with the user.
       refinement of Decision 6 and correcting the "viewers never page" row
       (viewers with `canPost` post, and posts page); the original text is
       unchanged.
-- [ ] The user approved the merge, tag, and push before any of them ran.
-- [ ] `v0.1.0` is tagged on the approved commit and pushed.
-- [ ] A scratch pnpm 12 consumer installs
+- [x] The user approved the merge, tag, and push before any of them ran.
+- [x] `v0.1.0` is tagged on the approved commit and pushed. *(annotated tag on merge commit `6dbc09e`, PR #1.)*
+- [x] A scratch pnpm 12 consumer installs
       `github:ministryplus/mps-propager-relay#v0.1.0` with the `allowBuilds`
       entry pnpm printed (recorded in the README); `pnpm exec propager-relay
-      keygen` works and `propager-relay serve` starts.
+      keygen` works and `propager-relay serve` starts. *(pnpm 12.9.1,
+      2026-11-23: first install refused with
+      `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`; key is the codeload tarball URL
+      for `6dbc09e`, not the `<git url>#<sha>` form the ADR guessed, so the
+      ADR addendum records it; `prepare` built `dist/`; `serve` listened,
+      `/healthz` 503 with fake tokens, SIGTERM exited cleanly.)*
 - [ ] Spec Verification 1–10 pass against the test workspace:
   - [ ] 1 Socket Mode standalone, `/healthz` connected
   - [ ] 2 two sites, channel isolation, reply + 👀
@@ -170,7 +175,7 @@ Verification 1–10 against a test Slack workspace with the user.
   - [ ] 7 second Socket Mode client → shared-app warning
   - [ ] 8 Events API standalone repeats 2–4
   - [ ] 9 viewer sees everything, `history`, `post` pages site A
-  - [ ] 10 git-dependency install
+  - [x] 10 git-dependency install
 
 ## Files Changed
 
