@@ -1,7 +1,7 @@
 # Task 001-3: Config and keys (RelayConfig, validateConfig, key helpers)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 2 (parallel with [001-2](001-2-protocol.md), [001-4](001-4-slack-api.md), [001-8](001-8-events-api.md) — disjoint files: `src/core/config.ts`, `src/core/keys.ts`, their tests)
 **Depends on:** [001-1](001-1-scaffold.md)
 **Blocks:** [001-5](001-5-router.md), [001-6](001-6-sessions.md), [001-7](001-7-outbound.md)
@@ -119,23 +119,23 @@ Both are pure (no I/O beyond `node:crypto`), so they're unit-tested directly.
 
 ## Acceptance Criteria
 
-- [ ] `RelayConfig`, `SiteConfig`, `ViewerConfig`, and `RelayLimits` match
+- [x] `RelayConfig`, `SiteConfig`, `ViewerConfig`, and `RelayLimits` match
       Decision 2 field for field.
-- [ ] `DEFAULT_LIMITS` holds Decision 2's seven values and is frozen.
-- [ ] `validateConfig` returns a `ResolvedConfig` with limits merged over the
+- [x] `DEFAULT_LIMITS` holds Decision 2's seven values and is frozen.
+- [x] `validateConfig` returns a `ResolvedConfig` with limits merged over the
       defaults, `viewers` defaulted to `[]`, `'*'` expanded, and a
       `channelOwner: Map<string, string>`.
-- [ ] `validateConfig` enforces every Decision 2 rule (unique names per kind,
+- [x] `validateConfig` enforces every Decision 2 rule (unique names per kind,
       channel id pattern, one site per channel, hash format, one owner per
       hash) plus "at least one channel" per site.
-- [ ] Several problems in one config produce one `ConfigError` listing all of
+- [x] Several problems in one config produce one `ConfigError` listing all of
       them in `problems` and in `message`.
-- [ ] `validateConfig` doesn't mutate its input.
-- [ ] `generateKey` returns `prk_` + 43 base64url characters from 32 random bytes.
-- [ ] `hashKey` returns `sha256:` + lowercase hex SHA-256 of the key.
-- [ ] `verifyKey` uses `crypto.timingSafeEqual`, accepts any matching hash in
+- [x] `validateConfig` doesn't mutate its input.
+- [x] `generateKey` returns `prk_` + 43 base64url characters from 32 random bytes.
+- [x] `hashKey` returns `sha256:` + lowercase hex SHA-256 of the key.
+- [x] `verifyKey` uses `crypto.timingSafeEqual`, accepts any matching hash in
       the list, skips malformed hashes, and never throws.
-- [ ] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
+- [x] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
 
 ## Files Changed
 
@@ -176,3 +176,13 @@ Both are pure (no I/O beyond `node:crypto`), so they're unit-tested directly.
 - **Hash hex is lowercase only.** Decision 2 says "64 hex"; `hashKey` emits
   lowercase, so uppercase is rejected as malformed (simplest single form).
 - **Zero sites** is accepted; the spec has no rule against it.
+- **Implementation notes (filled in while building).** `ResolvedConfig`
+  returns copies of `sites`, `viewers` and `slack`, so a caller mutating the
+  resolved config can't reach back into the input (and vice versa). A
+  duplicated channel inside one site isn't a conflict (de-duplicated before
+  the one-site-per-channel check). Malformed hashes are reported once as
+  malformed and left out of the shared-hash check. `001-plan.md`'s interface
+  section already describes this `ResolvedConfig` (viewers `[]`, `'*'`
+  expanded, `channelOwner`), so it was not edited; the exported names
+  `ResolvedViewerConfig`, `ConfigError` and `KEY_HASH_PATTERN` are additions
+  dependents may import.
