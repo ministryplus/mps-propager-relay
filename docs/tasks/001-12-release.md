@@ -18,7 +18,7 @@ how to run the standalone server, set up the Slack app for either ingress
 mode, mount the handlers in h3/Nitro, and generate keys. Add an addendum to
 the founding ADR recording Spec Decision 8's refinement of its Decision 6.
 Then, **only after the user approves**, merge, tag `v0.1.0`, and push; install
-the tag as a `github:` dependency in a scratch pnpm 10.34.9 consumer to
+the tag as a `github:` dependency in a scratch pnpm 12 consumer to
 confirm `prepare` and the exact `allowBuilds` entry; and run Spec
 Verification 1–10 against a test Slack workspace with the user.
 
@@ -112,9 +112,8 @@ Verification 1–10 against a test Slack workspace with the user.
    anything else the user approved). Record the tagged commit SHA.
 8. **Git-dependency install check** (Verification 10, success criterion 7),
    in a scratch directory outside the repo:
-   - `package.json` with `"packageManager": "pnpm@10.34.9"` so pnpm switches
-     to that version (fall back to `pnpm dlx pnpm@10.34.9 …` if it
-     doesn't); confirm `pnpm --version` prints `10.34.9`.
+   - Use pnpm 12, the version consumers run (village-portal moves to 12.x
+     on its `next` branch); confirm `pnpm --version` prints a 12.x.
    - `pnpm add github:ministryplus/mps-propager-relay#v0.1.0` → expect it to
      fail with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`. Record the exact
      `allowBuilds` key pnpm prints.
@@ -157,7 +156,7 @@ Verification 1–10 against a test Slack workspace with the user.
       unchanged.
 - [ ] The user approved the merge, tag, and push before any of them ran.
 - [ ] `v0.1.0` is tagged on the approved commit and pushed.
-- [ ] A scratch pnpm 10.34.9 consumer installs
+- [ ] A scratch pnpm 12 consumer installs
       `github:ministryplus/mps-propager-relay#v0.1.0` with the `allowBuilds`
       entry pnpm printed (recorded in the README); `pnpm exec propager-relay
       keygen` works and `propager-relay serve` starts.
@@ -206,7 +205,7 @@ pnpm dev:site --url ws://127.0.0.1:8790/ws --key prk_… --role viewer   # then 
 After approval (tag pushed), in a scratch directory:
 
 ```
-pnpm --version                                         # 10.34.9
+pnpm --version                                         # 12.x
 pnpm add github:ministryplus/mps-propager-relay#v0.1.0 # fails; copy the allowBuilds key
 pnpm install                                           # after adding the key: prepare builds dist/
 pnpm exec propager-relay keygen

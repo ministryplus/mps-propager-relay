@@ -172,7 +172,7 @@ Run parallel tasks in separate worktrees, each starting from the tip of `feat/re
 - **After wave 3:** each core module passes its own tests against fakes. The router routes a message to the owning site and to viewers, filters the bot's own messages, and drops duplicates and stale pages. The hub handles every close code, one connection per site, and resume. Outbound keeps per-thread order and turns a viewer post into a site page. Socket Mode connects, acks, hands off, and warns on a shared app against a fake server.
 - **After 001-10:** `createRelay(config)` with `FakeSlackApi` and fake transports runs the whole flow in process: a signed event in → a `message` frame to the site → `reply` → `postMessage` on the fake → `result`. `relay.viewer()` gets history and posts. `relay.health()` reports everything.
 - **After 001-11:** `propager-relay serve` runs on a real port. The end-to-end test passes over real HTTP and WebSocket. `propager-relay keygen` prints a key and its hash. The package can be mounted in an h3 app.
-- **After 001-12:** `v0.1.0` is tagged and pushed (with approval). A scratch pnpm 10.34.9 consumer installs it as `github:ministryplus/mps-propager-relay#v0.1.0` with the `allowBuilds` entry pnpm prints. `dev:site` verifies against a real test workspace (Spec Verification 1–10). ProPager's Spec 004 can start.
+- **After 001-12:** `v0.1.0` is tagged and pushed (with approval). A scratch pnpm 12 consumer installs it as `github:ministryplus/mps-propager-relay#v0.1.0` with the `allowBuilds` entry pnpm prints. `dev:site` verifies against a real test workspace (Spec Verification 1–10). ProPager's Spec 004 can start.
 
 ## Task Files
 

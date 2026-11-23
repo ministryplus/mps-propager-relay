@@ -468,7 +468,7 @@ Against a test Slack workspace with a test app. ProPager isn't needed; `dev:site
 7. Start a second Socket Mode client on the same app (e.g. a ProPager in Direct mode): the relay logs the shared-app warning and `/healthz` shows `slackSharedApp: true`.
 8. **Events API standalone:** run with `SLACK_SIGNING_SECRET` behind a tunnel or `tailscale funnel`, point the app's Request URL at `/slack/events`, and repeat steps 2–4.
 9. **Viewer:** connect a remote viewer (a `dev:site --role viewer` mode): it sees every message, including the relay's replies with `fromSelf: true`. `history` returns the latest messages. `post` `5678` → site A pages it (prints the message with `origin: "relay"`).
-10. **Install as a git dependency:** in a scratch pnpm 10.34.9 project, `pnpm add github:ministryplus/mps-propager-relay#v0.1.0` fails with the allowlist error; adding the entry pnpm prints makes it build; `pnpm exec propager-relay keygen` works.
+10. **Install as a git dependency:** in a scratch pnpm 12 project, `pnpm add github:ministryplus/mps-propager-relay#v0.1.0` fails with the allowlist error; adding the entry pnpm prints makes it build; `pnpm exec propager-relay keygen` works.
 
 ## Related
 
