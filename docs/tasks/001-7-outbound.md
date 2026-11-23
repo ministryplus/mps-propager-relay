@@ -1,7 +1,7 @@
 # Task 001-7: Outbound (per-thread FIFO, results, relay-originated posts)
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** Pending
+**Status:** Complete
 **Parallel group:** Wave 3 (parallel with [001-5](001-5-router.md), [001-6](001-6-sessions.md), [001-9](001-9-socket-mode.md) — disjoint files)
 **Depends on:** [001-2](001-2-protocol.md), [001-3](001-3-config-keys.md), [001-4](001-4-slack-api.md)
 **Blocks:** [001-10](001-10-relay-assembly.md)
@@ -91,28 +91,28 @@ come from the plan's "Interfaces between tasks". It is tested against
 
 ## Acceptance Criteria
 
-- [ ] `createOutbound` matches the plan's signature exactly.
-- [ ] `reply`/`react` from a viewer, `post` from a site, `post` from a viewer
+- [x] `createOutbound` matches the plan's signature exactly.
+- [x] `reply`/`react` from a viewer, `post` from a site, `post` from a viewer
       without `canPost`, and any request for a channel outside
       `principal.channels` resolve `not_allowed` and make no `SlackApi` call.
-- [ ] `reply` calls `postMessage` with `threadTs`; `post` calls it with
+- [x] `reply` calls `postMessage` with `threadTs`; `post` calls it with
       `threadTs` only when given; `react` calls `addReaction`; successful
       posts resolve `{ ok: true, ts }` and reactions `{ ok: true }`.
-- [ ] Requests with the same key run one at a time in request order; the next
+- [x] Requests with the same key run one at a time in request order; the next
       starts only after the previous resolves or rejects. Requests with
       different keys run concurrently.
-- [ ] `SlackApiError('rate_limited')` → `rate_limited`; any other
+- [x] `SlackApiError('rate_limited')` → `rate_limited`; any other
       `SlackApiError` → `slack:<code>`; a non-`SlackApiError` →
       `slack:unknown`. A failure doesn't block the next request on that key.
-- [ ] Every request resolves exactly one `ResultFrame` with its `id`;
+- [x] Every request resolves exactly one `ResultFrame` with its `id`;
       `request` never rejects.
-- [ ] A successful viewer `post` calls `onRelayPost` once with
+- [x] A successful viewer `post` calls `onRelayPost` once with
       `origin: 'relay'`, `eventId: 'relay:<ts>'`, `fromSelf: false`, no
       `user`/`botId`, and `kind`/`threadTs` matching the request. A failed
       post, a `reply`, or a `react` never calls it.
-- [ ] `src/core/outbound.ts` imports no HTTP or WebSocket library and never
+- [x] `src/core/outbound.ts` imports no HTTP or WebSocket library and never
       calls `fetch` directly.
-- [ ] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
+- [x] `pnpm test`, `pnpm typecheck`, and `pnpm build` pass.
 
 ## Files Changed
 
@@ -187,3 +187,11 @@ grep -nE "fetch\(|from '(h3|crossws|ws|node:http)'" src/core/outbound.ts   # no 
   `'network'` (001-4), and the spec's error list has no separate code for
   it, so it maps to `slack:network`. A non-`SlackApiError` exception (a bug)
   becomes `slack:unknown`, so every request still gets one result.
+- **Implementation notes (001-7).** `session.ts` (001-6) hadn't landed in this
+  worktree, so `outbound.ts` declares an identical, unexported `Principal`
+  with a `TODO(001-6)` to switch to `import type { Principal } from
+  './session.js'` at merge. The test derives `Principal` from
+  `createOutbound`'s signature, so it needs no change either way.
+  `FakeSlackApi` was not modified: its scripted async-function responses
+  already let a test hold a call open. `config` is accepted (plan signature)
+  but unused: permissions come from the `Principal`.
