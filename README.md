@@ -16,7 +16,7 @@ site runs into Slack's limit on installed apps.
 The relay fixes this. It holds the app's only connection to Slack and gives
 each site exactly the messages for its channel.
 
-> **Status: v0.1.0**, protocol 1. Built to
+> **Status: v0.1.1**, protocol 1. Built to
 > [Spec 001: Relay v1](docs/specs/001-relay-v1.md). The wire protocol is
 > documented in [`protocol/`](protocol/README.md).
 
@@ -60,7 +60,7 @@ example frames that both sides test against.
 The package is installed from git, pinned to a release tag:
 
 ```json
-"@ministryplus/propager-relay": "github:ministryplus/mps-propager-relay#v0.1.0"
+"@ministryplus/propager-relay": "github:ministryplus/mps-propager-relay#v0.1.1"
 ```
 
 Its `prepare` script builds `dist/` on install, and pnpm refuses to run it
@@ -70,10 +70,10 @@ In `pnpm-workspace.yaml`:
 
 ```yaml
 allowBuilds:
-  '@ministryplus/propager-relay@https://codeload.github.com/ministryplus/mps-propager-relay/tar.gz/6dbc09e612e6ba86df689bde997a7b0f2c41c9ff': true
+  '@ministryplus/propager-relay@https://codeload.github.com/ministryplus/mps-propager-relay/tar.gz/9ef36da229874729a6b8ee8e93b170b55b2e7414': true
 ```
 
-That key is for `v0.1.0` (commit `6dbc09e`); pnpm resolves a `github:` tag to
+That key is for `v0.1.1` (commit `9ef36da`); pnpm resolves a `github:` tag to
 a codeload tarball URL for the tagged commit. For another tag, the first
 install fails with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` and prints the
 exact key it wants; copy it from the error into `allowBuilds` and install
