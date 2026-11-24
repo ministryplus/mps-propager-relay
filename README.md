@@ -70,12 +70,14 @@ In `pnpm-workspace.yaml`:
 
 ```yaml
 allowBuilds:
-  '@ministryplus/propager-relay@<resolved git url>#<commit sha>': true
+  '@ministryplus/propager-relay@https://codeload.github.com/ministryplus/mps-propager-relay/tar.gz/6dbc09e612e6ba86df689bde997a7b0f2c41c9ff': true
 ```
 
-The first install fails with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` and
-prints the exact key it wants; copy it from the error into `allowBuilds` and
-install again. A name-only entry doesn't work. Upgrading the relay therefore
+That key is for `v0.1.0` (commit `6dbc09e`); pnpm resolves a `github:` tag to
+a codeload tarball URL for the tagged commit. For another tag, the first
+install fails with `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` and prints the
+exact key it wants; copy it from the error into `allowBuilds` and install
+again. A name-only entry doesn't work. Upgrading the relay therefore
 edits two places: the tag in `package.json` and this entry.
 
 `h3` (`^1.15.0`) and `crossws` (`^0.3.5`) are peer dependencies, used by
