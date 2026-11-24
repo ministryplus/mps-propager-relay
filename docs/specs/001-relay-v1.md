@@ -1,7 +1,7 @@
 # Spec 001: Relay v1 — Core, Protocol v1, h3 Handlers, Standalone Server
 
 **Date:** 2026-11-22
-**Status:** Draft
+**Status:** Complete — v0.1.0 (2026-11-23)
 **Branch:** `feat/relay-v1`
 
 ## Goals / Objective

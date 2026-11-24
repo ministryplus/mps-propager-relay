@@ -1,7 +1,7 @@
 # Task 001-12: dev:site, README, ADR addendum, v0.1.0 and live verification
 
 **Spec:** [001 — Relay v1](../specs/001-relay-v1.md)
-**Status:** In progress — steps 1–8 done (v0.1.0 tagged and install-checked); live verification (step 9) pending
+**Status:** Complete — v0.1.0 tagged, install-checked, and Spec Verification 1–10 passed against a test workspace (2026-11-23)
 **Parallel group:** Wave 6 (solo — tagging and pushing `v0.1.0` is outward-facing and **needs the user's go-ahead**)
 **Depends on:** [001-11](001-11-h3-standalone.md)
 **Blocks:** — (unblocks mps-propager Spec 004)
@@ -165,16 +165,34 @@ Verification 1–10 against a test Slack workspace with the user.
       for `6dbc09e`, not the `<git url>#<sha>` form the ADR guessed, so the
       ADR addendum records it; `prepare` built `dist/`; `serve` listened,
       `/healthz` 503 with fake tokens, SIGTERM exited cleanly.)*
-- [ ] Spec Verification 1–10 pass against the test workspace:
-  - [ ] 1 Socket Mode standalone, `/healthz` connected
-  - [ ] 2 two sites, channel isolation, reply + 👀
-  - [ ] 3 thread replies and thread broadcasts are `kind: "thread"`
-  - [ ] 4 relay's own replies never reach a site
-  - [ ] 5 a third `dev:site` replaces the first with `4003`
-  - [ ] 6 `--resume` replays missed messages, `resumed: true`
-  - [ ] 7 second Socket Mode client → shared-app warning
-  - [ ] 8 Events API standalone repeats 2–4
-  - [ ] 9 viewer sees everything, `history`, `post` pages site A
+- [x] Spec Verification 1–10 pass against the test workspace
+      (2026-11-23, dedicated test app, sites `north` → `C06Q284BDRT` and
+      `south` → `C0CLELAL45P`, viewer `portal` with `canPost`):
+  - [x] 1 Socket Mode standalone, `/healthz` connected *(200,
+        `slack: connected`, `slackSharedApp: false`; both channels backfilled)*
+  - [x] 2 two sites, channel isolation, reply + 👀 *(`1234` in north →
+        `north` only, ~0.2 s; reply and react `ok: true`; `south` silent)*
+  - [x] 3 thread replies and thread broadcasts are `kind: "thread"` *(plain
+        reply and "Also send to channel" both `kind: "thread"` with the
+        parent's `threadTs`; the parent's `message_changed` dropped)*
+  - [x] 4 relay's own replies never reach a site *(every "relay saw …" echo
+        logged as `ignoring own message`)*
+  - [x] 5 a third `dev:site` replaces the first with `4003` *(old one got
+        `error` 4003 and exited; the new one received `2001` as `seq=4`)*
+  - [x] 6 `--resume` replays missed messages, `resumed: true` *(down ~30 s;
+        `3001`/`3002` replayed as `seq` 5–6 on `--resume <epoch>:4`)*
+  - [x] 7 second Socket Mode client → shared-app warning *(warned in the log
+        and `/healthz` when the relay connected while a ProPager held a
+        socket on the app, and in a second relay started after it; see
+        Notes for the reverse-order gap)*
+  - [x] 8 Events API standalone repeats 2–4 *(via `tailscale funnel`; Request
+        URL verified; `4001` paged north with reply + 👀, thread reply
+        `kind: "thread"`, echo filtered, `south` silent; unsigned POST 401)*
+  - [x] 9 viewer sees everything, `history`, `post` pages site A *(history
+        returned 13 messages oldest first incl. `fromSelf`; `post … 5678`
+        → `north` got `origin: "relay"`, `eventId: "relay:<ts>"` at the same
+        instant as the `result`; the echo reached the viewer with
+        `fromSelf: true` and was filtered for `north`)*
   - [x] 10 git-dependency install
 
 ## Files Changed
@@ -219,6 +237,17 @@ pnpm exec propager-relay keygen
 Live: Spec Verification 1–9 with the user, checklist above.
 
 ## Notes
+
+- **Follow-ups found in live verification (2026-11-23), not fixed in v0.1.0:**
+  - **Shared-app detection is one-sided.** Slack reports `num_connections`
+    only in `hello`, so a client that connects *after* the relay is seen by
+    that client but not by the relay until the relay's next `hello` (Slack
+    refreshes about every 5 hours). Matches Spec Decision 4 as written, but
+    a ProPager started in Direct mode after the relay goes unnoticed by the
+    relay until then.
+  - **`dev:site` prints the site key** because it logs the `hello` frame in
+    full. Harmless with test keys; it should mask `key` before anyone runs it
+    with a production key.
 
 - **Approval is required for every outward-facing step:** the PR or merge
   to `main`, the tag, and each push. A finished local build is not
