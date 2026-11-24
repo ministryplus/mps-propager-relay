@@ -238,16 +238,18 @@ Live: Spec Verification 1–9 with the user, checklist above.
 
 ## Notes
 
-- **Follow-ups found in live verification (2026-11-23), not fixed in v0.1.0:**
-  - **Shared-app detection is one-sided.** Slack reports `num_connections`
-    only in `hello`, so a client that connects *after* the relay is seen by
+- **Follow-ups found in live verification (2026-11-23), fixed after the
+  v0.1.0 tag:**
+  - **Shared-app detection was one-sided.** Slack reports `num_connections`
+    only in `hello`, so a client that connected *after* the relay was seen by
     that client but not by the relay until the relay's next `hello` (Slack
-    refreshes about every 5 hours). Matches Spec Decision 4 as written, but
-    a ProPager started in Direct mode after the relay goes unnoticed by the
-    relay until then.
-  - **`dev:site` prints the site key** because it logs the `hello` frame in
-    full. Harmless with test keys; it should mask `key` before anyone runs it
-    with a production key.
+    refreshes about every 5 hours). **Fixed:** Socket Mode now hands a healthy
+    connection off to a fresh socket every 5 minutes (`refreshIntervalMs`),
+    which rechecks the count both ways; the warning logs once per shared
+    episode and routine refreshes log at debug (Spec Decision 4, "Recheck").
+  - **`dev:site` printed the site key** in the logged `hello` frame.
+    **Fixed:** the log shows `prk_…` plus the key's last 4 characters; the
+    frame sent to the relay is unchanged.
 
 - **Approval is required for every outward-facing step:** the PR or merge
   to `main`, the tag, and each push. A finished local build is not

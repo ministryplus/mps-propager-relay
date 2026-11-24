@@ -58,8 +58,14 @@ function log(text: string): void {
 
 const ws = new WebSocket(url);
 
+/** `prk_…` plus the last 4 characters: enough to tell keys apart in a log, useless to anyone reading it. */
+function maskKey(k: string): string {
+  return `prk_…${k.slice(-4)}`;
+}
+
 function send(frame: Record<string, unknown>): void {
-  log(`> ${JSON.stringify(frame)}`);
+  const shown = typeof frame.key === 'string' ? { ...frame, key: maskKey(frame.key) } : frame;
+  log(`> ${JSON.stringify(shown)}`);
   ws.send(JSON.stringify(frame));
 }
 

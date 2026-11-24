@@ -191,7 +191,10 @@ every Socket Mode connection. If a ProPager in Direct mode, or a second relay,
 uses the same app's app-level token, each one gets only part of the
 messages. The relay notices when Slack reports more connections than its own,
 logs a warning, and reports `slackSharedApp: true` in `/healthz` and in the
-`status` frame sites see. Switch every ProPager on that app to Relay mode.
+`status` frame sites see. Slack only reports the count when a connection
+opens, so the relay refreshes its connection every 5 minutes to recheck: a
+client that joins later is caught within 5 minutes, and the flag clears
+within 5 minutes of it leaving. Switch every ProPager on that app to Relay mode.
 
 ## Mount in h3 or Nitro
 
