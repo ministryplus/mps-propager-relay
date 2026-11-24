@@ -12,6 +12,12 @@ export interface SocketModeTiming {
   staleAfterMs: number;
   backoffBaseMs: number;
   backoffMaxMs: number;
+  /**
+   * How often a healthy connection is handed off to a fresh socket. Slack
+   * reports `num_connections` only in `hello`, so this is how the relay
+   * notices a client that joined the app after it (or one that left).
+   */
+  refreshIntervalMs: number;
 }
 
 const DEFAULT_TIMING: SocketModeTiming = {
@@ -19,6 +25,7 @@ const DEFAULT_TIMING: SocketModeTiming = {
   staleAfterMs: 30_000,
   backoffBaseMs: 1_000,
   backoffMaxMs: 60_000,
+  refreshIntervalMs: 300_000,
 };
 
 /** The next reconnect delay: `base` after 0, then doubling, capped at `max`. */
@@ -66,6 +73,8 @@ interface Sock {
   ws: WebSocket;
   watchdog: Watchdog;
   hello: boolean;
+  /** Opened by a routine refresh rather than a reconnect or Slack's `disconnect`; logs quietly. */
+  refresh: boolean;
   /** Set once the socket is retired, stopped, or its close has been handled; its events are ignored. */
   done: boolean;
   closed: Promise<void>;
@@ -99,6 +108,7 @@ export function createSocketMode(o: {
   let opening = false;
   let backoffMs = 0;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
   let nextId = 0;
   let status: SlackStatus = { slack: 'disconnected', slackSharedApp: false };
@@ -119,8 +129,22 @@ export function createSocketMode(o: {
     }, backoffMs);
   }
 
+  /** (Re)starts the countdown to the next routine handoff. */
+  function armRefresh(): void {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = null;
+    if (stopped) return;
+    refreshTimer = setTimeout(() => {
+      refreshTimer = null;
+      armRefresh(); // a refresh that fails or never says hello still gets another try
+      if (!active || pending || opening) return;
+      logger.debug(`socket mode: refreshing socket ${active.id} to recheck for other clients`);
+      void requestConnection(true, true);
+    }, timing.refreshIntervalMs);
+  }
+
   /** Opens a socket; resolves once it has opened or its failure has been handled. */
-  async function requestConnection(graceful: boolean): Promise<void> {
+  async function requestConnection(graceful: boolean, refresh = false): Promise<void> {
     opening = true;
     let url: string;
     try {
@@ -129,7 +153,7 @@ export function createSocketMode(o: {
       opening = false;
       if (stopped) return;
       if (graceful && active) {
-        logger.warn('socket mode: replacement handshake failed; keeping current connection', err);
+        (refresh ? logger.debug : logger.warn)('socket mode: replacement handshake failed; keeping current connection', err);
       } else {
         logger.error('socket mode: apps.connections.open failed', err);
         scheduleReconnect();
@@ -139,7 +163,7 @@ export function createSocketMode(o: {
     opening = false;
     if (stopped) return;
 
-    const sock = createSock(url);
+    const sock = createSock(url, refresh);
     if (graceful && active) {
       pending = sock;
     } else {
@@ -156,13 +180,14 @@ export function createSocketMode(o: {
     });
   }
 
-  function createSock(url: string): Sock {
+  function createSock(url: string, refresh: boolean): Sock {
     const ws = new WebSocket(url);
     const id = ++nextId;
     const sock: Sock = {
       id,
       ws,
       hello: false,
+      refresh,
       done: false,
       closed: new Promise<void>((resolve) => ws.once('close', () => resolve())),
       watchdog: createWatchdog({
@@ -249,21 +274,28 @@ export function createSocketMode(o: {
     backoffMs = 0;
     const debugInfo = isObject(msg.debug_info) ? msg.debug_info : undefined;
     if (debugInfo?.approximate_connection_time !== undefined) {
-      logger.info(
+      (sock.refresh ? logger.debug : logger.info)(
         `socket mode: hello on socket ${sock.id}; approximate connection time ${String(debugInfo.approximate_connection_time)} s`,
       );
     }
     const own = [active, pending].filter((s) => s && s.ws.readyState === WebSocket.OPEN).length;
     const reported = typeof msg.num_connections === 'number' ? msg.num_connections : own;
     const shared = reported > own;
-    if (shared) {
+    // A shared app warns once when it starts (or on a fresh connect), not on every refresh.
+    if (shared && (!status.slackSharedApp || !sock.refresh)) {
       logger.warn(
         `socket mode: Slack reports ${reported} connections but this relay has ${own}; ` +
           'another client on this app is taking some of the events',
       );
     }
+    if (!shared && status.slackSharedApp && (sock === pending || sock === active)) {
+      logger.info('socket mode: no other client on this app any more');
+    }
     if (sock === pending) promotePending();
-    if (sock === active) setStatus({ slack: 'connected', slackSharedApp: shared });
+    if (sock === active) {
+      setStatus({ slack: 'connected', slackSharedApp: shared });
+      armRefresh();
+    }
   }
 
   function retire(sock: Sock): void {
@@ -277,7 +309,7 @@ export function createSocketMode(o: {
     active = pending;
     pending = null;
     if (old) {
-      logger.info(`socket mode: switched to socket ${active!.id}; closing socket ${old.id}`);
+      (active!.refresh ? logger.debug : logger.info)(`socket mode: switched to socket ${active!.id}; closing socket ${old.id}`);
       retire(old);
     }
   }
@@ -292,7 +324,9 @@ export function createSocketMode(o: {
         setStatus({ ...status, slack: 'disconnected' });
         scheduleReconnect();
       } else {
-        logger.warn('socket mode: replacement handshake failed; keeping current connection');
+        (sock.refresh ? logger.debug : logger.warn)(
+          'socket mode: replacement handshake failed; keeping current connection',
+        );
       }
     } else if (sock === active) {
       active = null;
@@ -312,6 +346,10 @@ export function createSocketMode(o: {
       if (reconnectTimer) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
+      }
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+        refreshTimer = null;
       }
       const socks = [active, pending].filter((s): s is Sock => s !== null);
       active = null;

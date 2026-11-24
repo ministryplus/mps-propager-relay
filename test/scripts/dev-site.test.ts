@@ -122,6 +122,9 @@ describe('dev:site', () => {
     const site = devSite(['--url', url, '--key', siteKey]);
     const hello = await site.waitFor(/> \{"type":"hello"/);
     expect(hello).toContain(`"client":{"name":"dev-site","version":"${VERSION}"}`);
+    // The key is masked in the log: enough to tell keys apart, never the key itself.
+    expect(hello).not.toContain(siteKey);
+    expect(hello).toContain(`"key":"prk_…${siteKey.slice(-4)}"`);
     await site.waitFor(/< \{"type":"welcome"/);
     const epoch = /epoch=(\S+) resumed=false/.exec(await site.waitFor(/epoch=/))![1]!;
     await site.waitFor(/< \{"type":"status"/);

@@ -163,6 +163,7 @@ Config changes need a restart in v1 (see Not Doing).
 - `apps.connections.open` with the app token gives a `wss://` URL, opened with `ws`.
 - Ack every envelope that has an `envelope_id` before processing it, on the socket it arrived on.
 - **`hello`:** if `num_connections` > the relay's own live sockets, log a warning and report `slackSharedApp: true` in health and in `status` frames. Another client on this app is taking some of the events, the failure this relay exists to prevent.
+- **Recheck** (added after live verification, 2026-11-23): Slack sends `num_connections` only in `hello`, so every 5 minutes the relay hands a healthy connection off to a fresh socket, the same way as on `disconnect`. Its `hello` catches a client that joined the app after the relay, and clears `slackSharedApp` once that client leaves. The warning is logged once per shared episode, and routine refreshes log at debug.
 - **`disconnect`:** open a replacement socket first, switch over on its `hello`, then close the old one. That's the same graceful handoff ProPager does.
 - **Liveness:** ping every 10 s; if nothing (frame or pong) arrives for 30 s, reconnect.
 - **Backoff:** 1 s doubling to 60 s, reset after a `hello`.

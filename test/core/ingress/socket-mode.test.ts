@@ -25,6 +25,7 @@ const TIMING: SocketModeTiming = {
   staleAfterMs: 120,
   backoffBaseMs: 20,
   backoffMaxMs: 160,
+  refreshIntervalMs: 60_000, // off for these tests unless one overrides it
 };
 
 // The real send, so the spy in the ack-order test can call through.
@@ -261,6 +262,74 @@ describe('socket mode: shared app', () => {
     await vi.waitFor(() => expect(ctx.statuses).toHaveLength(2));
     expect(ctx.statuses[1]).toEqual({ slack: 'connected', slackSharedApp: false });
     expect(ctx.log.at('warn')).toHaveLength(1);
+  });
+});
+
+describe('socket mode: shared-app recheck', () => {
+  /** Another Socket Mode client on the same app; from Slack's side, one more connection. */
+  async function otherClient(server: FakeSocketModeServer) {
+    const ws = new WebSocket(server.url());
+    await new Promise<void>((resolve, reject) => {
+      ws.once('open', () => resolve());
+      ws.once('error', reject);
+    });
+    const close = () =>
+      new Promise<void>((resolve) => {
+        if (ws.readyState === WebSocket.CLOSED) return resolve();
+        ws.once('close', () => resolve());
+        ws.close();
+      });
+    cleanups.push(close);
+    return { close };
+  }
+
+  it('a periodic handoff detects a client that connected later, and clears once it leaves', async () => {
+    const ctx = await setup({ timing: { refreshIntervalMs: 150 } });
+    await startConnected(ctx);
+    expect(ctx.client.status()).toEqual({ slack: 'connected', slackSharedApp: false });
+
+    const other = await otherClient(ctx.server);
+    await vi.waitFor(() => expect(ctx.client.status().slackSharedApp).toBe(true), { timeout: 2000 });
+    expect(ctx.opens()).toBeGreaterThanOrEqual(2);
+    expect(ctx.log.at('warn').some((w) => /another client/i.test(w.text))).toBe(true);
+
+    await other.close();
+    await vi.waitFor(() => expect(ctx.client.status().slackSharedApp).toBe(false), { timeout: 2000 });
+    expect(ctx.statuses.every((s) => s.slack === 'connected')).toBe(true);
+    expect(ctx.log.at('info').some((l) => /no other client/i.test(l.text))).toBe(true);
+  });
+
+  it('logs routine refreshes at debug only, and warns once per shared episode', async () => {
+    const ctx = await setup({ timing: { refreshIntervalMs: 100 } });
+    await startConnected(ctx);
+    const infoAfterConnect = ctx.log.at('info').length;
+    await vi.waitFor(() => expect(ctx.opens()).toBeGreaterThanOrEqual(4), { timeout: 2000 });
+    expect(ctx.log.at('info')).toHaveLength(infoAfterConnect);
+    expect(ctx.log.at('warn')).toHaveLength(0);
+
+    await otherClient(ctx.server);
+    const opensAtJoin = ctx.opens();
+    await vi.waitFor(() => expect(ctx.opens()).toBeGreaterThanOrEqual(opensAtJoin + 3), { timeout: 2000 });
+    expect(ctx.client.status().slackSharedApp).toBe(true);
+    expect(ctx.log.at('warn').filter((w) => /another client/i.test(w.text))).toHaveLength(1);
+  });
+
+  it('a failed refresh keeps the current socket and tries again next interval', async () => {
+    const ctx = await setup({ timing: { refreshIntervalMs: 100 } });
+    await startConnected(ctx);
+    ctx.api.script('openSocketModeUrl', new Error('ratelimited'));
+    await vi.waitFor(() => expect(ctx.opens()).toBeGreaterThanOrEqual(3), { timeout: 2000 });
+    expect(ctx.client.status().slack).toBe('connected');
+    expect(ctx.statuses.every((s) => s.slack === 'connected')).toBe(true);
+  });
+
+  it('stops refreshing after stop()', async () => {
+    const ctx = await setup({ timing: { refreshIntervalMs: 60 } });
+    await startConnected(ctx);
+    await ctx.client.stop();
+    const opens = ctx.opens();
+    await sleep(200);
+    expect(ctx.opens()).toBe(opens);
   });
 });
 
